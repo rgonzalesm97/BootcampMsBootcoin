@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import com.bank.bootcoin.model.BootcoinTransaction;
 import com.bank.bootcoin.model.BootcoinWallet;
 import com.bank.bootcoin.model.MessageDto;
+import com.bank.bootcoin.repository.BootcoinTransactionRepository;
 import com.bank.bootcoin.repository.BootcoinWalletRepository;
 import com.bank.bootcoin.service.BootcoinWalletService;
 
@@ -18,32 +19,33 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class BootcoinWalletServiceImpl implements BootcoinWalletService{
 	
-	private final BootcoinWalletRepository repo;
+	private final BootcoinWalletRepository walletRepo;
+	private final BootcoinTransactionRepository transactionRepo;
 	private final KafkaTemplate<String, MessageDto> kafkaTemplate;
 	
 	@Override
 	public Flux<BootcoinWallet> findAll() {
-		return repo.findAll();
+		return walletRepo.findAll();
 	}
 
 	@Override
 	public Mono<BootcoinWallet> findById(String id) {
-		return repo.findById(id);
+		return walletRepo.findById(id);
 	}
 
 	@Override
 	public Mono<BootcoinWallet> findByPhoneNumber(String phoneNumber) {
-		return repo.findByPhoneNumber(phoneNumber);
+		return walletRepo.findByPhoneNumber(phoneNumber);
 	}
 
 	@Override
 	public Mono<BootcoinWallet> save(BootcoinWallet wallet) {
-		return repo.save(wallet);
+		return walletRepo.save(wallet);
 	}
 
 	@Override
 	public void deleteById(String id) {
-		repo.deleteById(id).subscribe();
+		walletRepo.deleteById(id).subscribe();
 	}
 
 	@Override
@@ -54,20 +56,23 @@ public class BootcoinWalletServiceImpl implements BootcoinWalletService{
 	@Override
 	@KafkaListener(topics="bootcoinBuyRequest", groupId="groupId")
 	public void bootcoinAcceptBuyRequest(MessageDto message) {
-		//Este sera un numero elegido al azar ya que no hay un UI para que reciba la notificacion y le de aceptar al request
+		//El numero hardcodeado representa un usuario que acepto el buy request ya que no hay un UI para que reciba la notificacion y le de aceptar al request
 		
-		BootcoinTransaction transaction = generateTransaction(message.getPhoneNumber(), "94351684", message.getAmount());
-		System.out.println(transaction);
-		
+		generateTransaction(message.getPhoneNumber(), "94351684", message.getAmount()).doOnNext(System.out::println);
 		
 	}
 	
 	//UTIL METHODS
-	public BootcoinTransaction generateTransaction(String from, String to, Double amount) {
-		return BootcoinTransaction.builder().from(from).to(to).amount(amount).build();
+	public Mono<BootcoinTransaction> generateTransaction(String from, String to, Double amount) {
+		
+		return transactionRepo.save(BootcoinTransaction.builder().status("pending").from(from).to(to).amount(amount).build());
 	}
 	
 	public void validTransaction(BootcoinTransaction transaction) {
+		
+	}
+	
+	public void validWallet(BootcoinTransaction transaction) {
 		
 	}
 

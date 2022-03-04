@@ -17,6 +17,7 @@ public class BootcoinTransaction {
 
 	@Id
 	String id;
+	String status;
 	String from;
 	String to;
 	Double amount;
